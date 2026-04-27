@@ -1,0 +1,150 @@
+version: "3.9"
+
+# ============================================================
+# AI Agent Security Lab — Full Stack
+# Redes separadas: internal (agent↔services) | attack (tests→agent)
+# ============================================================
+
+services:
+
+  # ---- Target: Autonomous Agent ----
+  agent:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.agent
+    env_file: ../.env
+    environment:
+      MOCK_API_URL: http://mock_api:8080
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_HOST: chroma
+      CHROMA_PORT: 8000
+      OLLAMA_BASE_URL: http://ollama:11434
+    volumes:
+      - agent_sandbox:/sandbox/data
+      - agent_reports:/app/reports
+    networks:
+      - internal
+    depends_on:
+      redis:
+        condition: service_healthy
+      chroma:
+        condition: service_healthy
+      mock_api:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+      - seccomp:./seccomp-profile.json
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec
+
+  # ---- Mock External API ----
+  mock_api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.mock_api
+    networks:
+      - internal
+      - attack
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  # ---- Redis (Memory Layer) ----
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  # ---- Chroma (Vector DB — RAG Memory) ----
+  chroma:
+    image: chromadb/chroma:0.5.0
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/heartbeat')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      IS_PERSISTENT: "TRUE"
+      ANONYMIZED_TELEMETRY: "FALSE"
+
+  # ---- Ollama (Local LLM — airgapped) ----
+  ollama:
+    image: ollama/ollama:latest
+    networks:
+      - internal
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      OLLAMA_KEEP_ALIVE: "5m"
+    profiles:
+      - llm  # solo corre con: docker compose --profile llm up
+
+  # ---- Prometheus (Métricas) ----
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    networks:
+      - internal
+      - monitoring
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    profiles:
+      - monitoring
+
+  # ---- Grafana (Dashboard) ----
+  grafana:
+    image: grafana/grafana:10.4.0
+    networks:
+      - monitoring
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: labpassword
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    profiles:
+      - monitoring
+
+volumes:
+  agent_sandbox:
+  agent_reports:
+  redis_data:
+  chroma_data:
+  ollama_models:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  internal:
+    driver: bridge
+    internal: true       # sin acceso a internet
+  attack:
+    driver: bridge       # red para framework ofensivo → mock_api
+  monitoring:
+    driver: bridge

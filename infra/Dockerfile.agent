@@ -1,0 +1,32 @@
+FROM python:3.11-slim AS base
+
+# Non-root user — mínimo privilegio
+RUN addgroup --gid 1001 agent && \
+    adduser --uid 1001 --gid 1001 --disabled-password --gecos "" agent
+
+WORKDIR /app
+
+# Dependencias primero (cache layer)
+COPY pyproject.toml .
+RUN pip install --no-cache-dir -e ".[dev]"
+
+# Código fuente
+COPY agent/ ./agent/
+COPY monitor/ ./monitor/
+COPY defense/ ./defense/
+COPY docs/ ./docs/
+
+# Sandbox filesystem — aislado del host
+RUN mkdir -p /sandbox/data /sandbox/vuln-db && \
+    chown -R agent:agent /sandbox && \
+    chmod 750 /sandbox/data
+
+# Reports dir
+RUN mkdir -p /app/reports && chown agent:agent /app/reports
+
+USER agent
+
+HEALTHCHECK --interval=10s --timeout=3s --retries=3 \
+    CMD python -c "from agent.agent import Agent; print('ok')"
+
+CMD ["python", "-m", "agent.agent"]

@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+RUN addgroup --gid 1002 mockapi && \
+    adduser --uid 1002 --gid 1002 --disabled-password --gecos "" mockapi
+
+WORKDIR /app
+COPY pyproject.toml .
+RUN pip install --no-cache-dir -e .
+COPY mock_api/ ./mock_api/
+
+USER mockapi
+
+HEALTHCHECK --interval=5s --timeout=3s --retries=5 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"
+
+CMD ["uvicorn", "mock_api.server:app", "--host", "0.0.0.0", "--port", "8080", "--log-level", "warning"]
