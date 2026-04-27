@@ -11,20 +11,25 @@ class ExecToolError(Exception):
     pass
 
 
-# Builtins that allow escape or DoS
+# Builtins and modules that allow escape, I/O, network, or env access
 _BLOCKED_PATTERNS = [
     "__import__", "open(", "exec(", "eval(", "compile(",
-    "os.system", "subprocess", "importlib",
-    "pty", "socket", "__builtins__",
+    "os.system", "os.exec", "os.environ", "os.popen",
+    "subprocess", "importlib", "ctypes",
+    "pty", "socket", "urllib", "requests", "httpx",
+    "sys.modules", "sys.path",
+    "__builtins__", "__subclasses__",
     "help(", "breakpoint(", "input(",  # interactive / flow control
+    "pickle", "marshal",               # deserialization RCE
 ]
 
 import re as _re
 # Regex patterns for DoS via large literals (no resource limits on Windows)
 _DOS_PATTERNS = [
-    _re.compile(r"\*\*\s*\d{6,}"),        # exponent >= 6 digits: 2**100000
-    _re.compile(r"\*\s*10\s*\*\*\s*\d+"), # string/list bomb: 'a'*10**N
-    _re.compile(r"\*\s*\d{8,}"),           # direct large multiplier: 'a'*10000000
+    _re.compile(r"\*\*\s*\d{6,}"),              # exponent >= 6 digits: 2**100000
+    _re.compile(r"\*\s*10\s*\*\*\s*\d+"),       # string/list bomb: 'a'*10**N
+    _re.compile(r"\*\s*\d{8,}"),                 # direct large multiplier: 'a'*10000000
+    _re.compile(r"10\s*\*\*\s*([6-9]|\d{2,})"), # power-of-10 bomb: 10**6 through 10**N
 ]
 
 _TIMEOUT = 5
