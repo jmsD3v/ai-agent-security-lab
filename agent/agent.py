@@ -25,13 +25,14 @@ Your purpose is to assist security researchers, not to bypass controls."""
 
 
 class Agent:
-    def __init__(self):
-        tools = [
-            FileTool(),
-            APITool(),
-            MemoryTool(),
-            ExecTool(),
-        ]
+    def __init__(self, tools: list | None = None):
+        if tools is None:
+            tools = [
+                FileTool(),
+                APITool(),
+                MemoryTool(),   # lazy — connects to Redis/Chroma only on first use
+                ExecTool(),
+            ]
         audit = AuditLog()
         policy = PolicyEngine()
         self._monitor = InterceptLayer(tools, audit=audit, policy=policy)

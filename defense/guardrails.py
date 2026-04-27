@@ -10,7 +10,8 @@ class GuardrailViolation(Exception):
 
 # OWASP LLM01 — Prompt Injection patterns
 _INJECTION_PATTERNS = [
-    (r"ignore\s+(previous|all|above|prior)\s+instructions?", "LLM01", "AML.T0051"),
+    (r"ignore\s+(previous|all|above|prior|rules?|instructions?)", "LLM01", "AML.T0051"),
+    (r"ignore\s+rules?", "LLM01", "AML.T0051"),
     (r"disregard\s+(your|the)\s+(system\s+)?prompt", "LLM01", "AML.T0051"),
     (r"you\s+are\s+now\s+(a\s+)?(?:dan|evil|uncensored|jailbroken)", "LLM01", "AML.T0051"),
     (r"jailbreak", "LLM01", "AML.T0051"),

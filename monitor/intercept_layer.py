@@ -22,11 +22,18 @@ class InterceptLayer:
         if tool is None:
             raise ValueError(f"unknown tool: {tool_name!r}")
 
-        # Policy check — fail fast before any execution
-        self._policy.check(tool_name, method)
-
         start = time.monotonic()
         event: dict = {"tool": tool_name, "method": method, "args": kwargs}
+
+        # Policy check — fail fast, but always log the violation
+        try:
+            self._policy.check(tool_name, method)
+        except PolicyViolation as exc:
+            event["outcome"] = "policy_blocked"
+            event["error"] = str(exc)
+            event["duration_ms"] = round((time.monotonic() - start) * 1000, 2)
+            self._emit(event)
+            raise
 
         try:
             result = getattr(tool, method)(**kwargs)
@@ -34,13 +41,6 @@ class InterceptLayer:
             event["duration_ms"] = round((time.monotonic() - start) * 1000, 2)
             self._emit(event)
             return result
-
-        except PolicyViolation as exc:
-            event["outcome"] = "policy_blocked"
-            event["error"] = str(exc)
-            event["duration_ms"] = round((time.monotonic() - start) * 1000, 2)
-            self._emit(event)
-            raise
 
         except Exception as exc:
             event["outcome"] = "error"
