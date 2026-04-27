@@ -100,35 +100,9 @@ for e in blocked[:10]:
     print(f'  [{e[\"outcome\"]}] {e[\"tool\"]}.{e[\"method\"]}: {e.get(\"error\", \"\")[:80]}')
 "
 
-report-html:  ## Generate HTML report
-	python -c "
-from defense.owasp_atlas_mapper import OWASP_LLM, MITRE_ATLAS
-import json
-from pathlib import Path
-from datetime import datetime
-
-log = Path('reports/audit.jsonl')
-events = [json.loads(l) for l in log.read_text().splitlines() if l.strip()] if log.exists() else []
-blocked = [e for e in events if e.get('outcome') in ('error', 'policy_blocked')]
-
-html = f'''<!DOCTYPE html>
-<html><head><title>AI Agent Security Lab Report</title>
-<style>body{{font-family:monospace;background:#0d1117;color:#c9d1d9;padding:2em}}
-h1{{color:#58a6ff}} .blocked{{color:#f85149}} .ok{{color:#3fb950}}
-table{{border-collapse:collapse;width:100%}} td,th{{padding:.5em;border:1px solid #30363d;text-align:left}}
-</style></head><body>
-<h1>AI Agent Security Lab — Audit Report</h1>
-<p>Generated: {datetime.now().isoformat()}</p>
-<p>Total events: {len(events)} | <span class=\"blocked\">Blocked: {len(blocked)}</span> | <span class=\"ok\">OK: {len(events)-len(blocked)}</span></p>
-<h2>Events</h2>
-<table><tr><th>Tool</th><th>Method</th><th>Outcome</th><th>Duration ms</th><th>Error</th></tr>'''
-for e in events[-50:]:
-    cls = 'blocked' if e.get('outcome') in ('error','policy_blocked') else 'ok'
-    html += f\"<tr class='{cls}'><td>{e.get('tool','')}</td><td>{e.get('method','')}</td><td>{e.get('outcome','')}</td><td>{e.get('duration_ms','')}</td><td>{e.get('error','')[:80]}</td></tr>\"
-html += '</table></body></html>'
-Path('reports/report.html').write_text(html)
-print('Report saved to reports/report.html')
-"
+report-html:  ## Generate HTML report (OWASP + ATLAS mapped)
+	python3 reports/generate_html.py --input reports/audit.jsonl --output reports/report.html
+	@echo "Open reports/report.html in your browser."
 
 # ---- Cleanup ----
 
