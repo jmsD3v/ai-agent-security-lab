@@ -1,4 +1,4 @@
-.PHONY: help up down build logs test test-unit test-security attack-all attack-injection attack-tools attack-memory attack-social report clean pull-model
+.PHONY: help up down build logs test test-unit test-security attack-all attack-injection attack-tools attack-memory attack-social attack-supply-chain attack-multimodal report report-html report-sarif clean pull-model docker-push docker-build-push
 
 COMPOSE = docker compose -f infra/docker-compose.yml
 COMPOSE_LLM = $(COMPOSE) --profile llm
@@ -25,6 +25,15 @@ down:  ## Stop and remove containers + volumes
 
 build:  ## Rebuild images
 	$(COMPOSE) build --no-cache
+
+docker-push:  ## Push pre-built images to Docker Hub (run 'make build' first)
+	docker push jmsilva83/ai-agent-security-lab:latest
+	docker push jmsilva83/ai-agent-security-lab-mock-api:latest
+	@echo "[DockerHub] Images published. Community can now run: make up"
+
+docker-build-push:  ## Build + push to Docker Hub in one step
+	$(COMPOSE) build --no-cache
+	@make docker-push
 
 logs:  ## Tail all logs
 	$(COMPOSE) logs -f
@@ -65,6 +74,10 @@ attack-all:  ## Run ALL attack suites
 	python -m attacks.mem_poison
 	AGENT_MODE=deterministic FILE_SANDBOX_PATH=/tmp/sandbox \
 	python -m attacks.social_engineering
+	AGENT_MODE=deterministic FILE_SANDBOX_PATH=/tmp/sandbox \
+	python -m attacks.supply_chain
+	AGENT_MODE=deterministic FILE_SANDBOX_PATH=/tmp/sandbox \
+	python -m attacks.multimodal
 	@make report
 
 attack-injection:  ## Prompt injection attacks only
@@ -80,6 +93,14 @@ attack-memory:  ## Memory poisoning attacks only (Redis + Chroma)
 attack-social:  ## Social engineering attacks (manipulation, multi-agent spoofing, gaslighting)
 	AGENT_MODE=deterministic FILE_SANDBOX_PATH=/tmp/sandbox \
 	python -m attacks.social_engineering
+
+attack-supply-chain:  ## Supply chain attacks (typosquatting, dep confusion, plugin poisoning)
+	AGENT_MODE=deterministic FILE_SANDBOX_PATH=/tmp/sandbox \
+	python -m attacks.supply_chain
+
+attack-multimodal:  ## Multimodal attacks (vision injection, EXIF, PDF, alt-text, audio)
+	AGENT_MODE=deterministic FILE_SANDBOX_PATH=/tmp/sandbox \
+	python -m attacks.multimodal
 
 attack-network:  ## SSRF tests with real network (WARNING: sends real requests)
 	@echo "[WARNING] This sends real network requests. Ctrl+C to abort."
@@ -109,6 +130,10 @@ for e in blocked[:10]:
 report-html:  ## Generate HTML report (OWASP + ATLAS mapped)
 	python3 reports/generate_html.py --input reports/audit.jsonl --output reports/report.html
 	@echo "Open reports/report.html in your browser."
+
+report-sarif:  ## Generate SARIF 2.1.0 report (GitHub Code Scanning compatible)
+	python3 reports/generate_sarif.py --input reports/audit.jsonl --output reports/results.sarif
+	@echo "Upload: gh code-scanning upload-results -f reports/results.sarif"
 
 # ---- Cleanup ----
 

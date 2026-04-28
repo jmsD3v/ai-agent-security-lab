@@ -9,6 +9,7 @@ services:
 
   # ---- Target: Autonomous Agent ----
   agent:
+    image: jmsilva83/ai-agent-security-lab:latest
     build:
       context: ..
       dockerfile: infra/Dockerfile.agent
@@ -42,6 +43,7 @@ services:
 
   # ---- Mock External API ----
   mock_api:
+    image: jmsilva83/ai-agent-security-lab-mock-api:latest
     build:
       context: ..
       dockerfile: infra/Dockerfile.mock_api

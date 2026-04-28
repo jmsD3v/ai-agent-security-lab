@@ -1,6 +1,14 @@
 """
 Security Research Assistant Agent.
 Dual-mode: deterministic (CI-safe) or LLM-backed (Ollama/Anthropic).
+
+Defense layers applied on every request:
+  1. SemanticClassifier   — heuristic intent scoring (blocks score >= 0.70)
+  2. Guardrails.validate_input — regex + unicode normalization
+  3. PolicyEngine         — enforced at each tool call via InterceptLayer
+  4. ContentSecurity      — RAG document sanitization before prompt injection
+  5. Guardrails.validate_output — leak detection on every agent response
+  6. ContentSecurity.sanitize_output — PII redaction + HTML stripping
 """
 
 import os
@@ -9,6 +17,8 @@ from monitor.intercept_layer import InterceptLayer
 from monitor.audit_log import AuditLog
 from defense.guardrails import Guardrails, GuardrailViolation
 from defense.policy_engine import PolicyEngine
+from defense.content_security import ContentSecurity, ContentSecurityViolation
+from defense.semantic_classifier import SemanticClassifier
 
 
 SYSTEM_PROMPT = """You are a Security Research Assistant with access to tools for
@@ -24,6 +34,11 @@ strict boundaries:
 Your purpose is to assist security researchers, not to bypass controls."""
 
 
+def _build_url_allowlist() -> set[str]:
+    raw = os.getenv("ALLOWED_API_DOMAINS", "mock_api")
+    return {d.strip() for d in raw.split(",") if d.strip()}
+
+
 class Agent:
     def __init__(self, tools: list | None = None):
         if tools is None:
@@ -37,6 +52,15 @@ class Agent:
         policy = PolicyEngine()
         self._monitor = InterceptLayer(tools, audit=audit, policy=policy)
         self._guardrails = Guardrails()
+        self._classifier = SemanticClassifier(
+            block_threshold=float(os.getenv("CLASSIFIER_THRESHOLD", "0.70"))
+        )
+        self._content_security = ContentSecurity(
+            url_allowlist=_build_url_allowlist(),
+            block_html=True,
+            block_prompt_leakage=True,
+            redact_pii_in_output=os.getenv("REDACT_PII", "true").lower() == "true",
+        )
         self._max_iter = int(os.getenv("AGENT_MAX_ITERATIONS", "10"))
         self._mode = os.getenv("AGENT_MODE", "deterministic")
         self._llm = self._init_llm() if self._mode == "llm" else None
@@ -55,13 +79,34 @@ class Agent:
         raise ValueError(f"unknown LLM_PROVIDER: {provider}")
 
     def run(self, user_input: str) -> str:
-        # Fail fast — validate before touching any tool
+        # Layer 1: semantic classifier — heuristic intent scoring
+        clf_result = self._classifier.classify(user_input)
+        if clf_result.blocked:
+            raise GuardrailViolation(
+                f"semantic classifier blocked input (score={clf_result.score:.2f}, "
+                f"intent={clf_result.intent.value}): {clf_result.reason}",
+                owasp_id="LLM01", atlas_id="AML.T0051",
+            )
+
+        # Layer 2: regex + unicode guardrails
         self._guardrails.validate_input(user_input)
         self._monitor.reset_session()
 
         if self._mode == "deterministic":
             return self._deterministic_run(user_input)
         return self._llm_run(user_input)
+
+    def sanitize_rag_context(self, document: str, source: str = "vector_store") -> str:
+        """
+        Sanitize a retrieved document before injecting into the agent prompt.
+        Call this before including any RAG document in the LLM context.
+        """
+        return self._content_security.sanitize_rag_document(document, source=source)
+
+    def _finalize_output(self, output: str) -> str:
+        """Layer 5+6: output guardrail + content security on every response."""
+        self._guardrails.validate_output(output)
+        return self._content_security.sanitize_output(output)
 
     def _deterministic_run(self, user_input: str) -> str:
         """Rule-based agent for CI — no LLM, fully deterministic."""
@@ -78,8 +123,7 @@ class Agent:
             if filename:
                 content = self._monitor.call("file_tool", "read", {"path": filename})
                 output = f"Content: {content[:200]}"
-                self._guardrails.validate_output(output)
-                return output
+                return self._finalize_output(output)
             return "Specify a filename to read."
 
         if "search" in lower or "query" in lower:
@@ -119,8 +163,7 @@ class Agent:
 
         result = executor.invoke({"input": f"{SYSTEM_PROMPT}\n\nUser: {user_input}"})
         output = result.get("output", "")
-        self._guardrails.validate_output(output)
-        return output
+        return self._finalize_output(output)
 
 
 if __name__ == "__main__":

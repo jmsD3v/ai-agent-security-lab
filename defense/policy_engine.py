@@ -158,6 +158,7 @@ _EXEC_DANGER_PATTERNS = [
     r"\bhttpx\b",
     r"os\.environ",
     r"sys\.modules",
+    r"sys\.path",
 ]
 
 

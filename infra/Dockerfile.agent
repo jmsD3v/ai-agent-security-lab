@@ -2,8 +2,8 @@ FROM python:3.11-slim AS base
 
 LABEL org.opencontainers.image.title="AI Agent Security Lab — Agent" \
       org.opencontainers.image.description="Autonomous security research agent with sandboxed tools, guardrails, and audit logging. Part of the AI Agent Security Testing Lab." \
-      org.opencontainers.image.url="https://github.com/juanmsilva/ai-agent-security-lab" \
-      org.opencontainers.image.source="https://github.com/juanmsilva/ai-agent-security-lab" \
+      org.opencontainers.image.url="https://github.com/jmsD3v/ai-agent-security-lab" \
+      org.opencontainers.image.source="https://github.com/jmsD3v/ai-agent-security-lab" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.version="1.0.0" \
       org.opencontainers.image.vendor="AI Agent Security Lab" \
@@ -24,7 +24,8 @@ RUN pip install --no-cache-dir -e ".[dev]"
 COPY agent/ ./agent/
 COPY monitor/ ./monitor/
 COPY defense/ ./defense/
-COPY docs/ ./docs/
+COPY attacks/ ./attacks/
+COPY reports/ ./reports/
 
 # Sandbox filesystem — aislado del host
 RUN mkdir -p /sandbox/data /sandbox/vuln-db && \

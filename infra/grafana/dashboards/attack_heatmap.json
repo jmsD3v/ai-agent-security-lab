@@ -1,0 +1,257 @@
+{
+  "__inputs": [],
+  "__requires": [
+    {"type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0"},
+    {"type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0"},
+    {"type": "panel", "id": "heatmap", "name": "Heatmap", "version": ""},
+    {"type": "panel", "id": "stat", "name": "Stat", "version": ""},
+    {"type": "panel", "id": "timeseries", "name": "Time series", "version": ""},
+    {"type": "panel", "id": "piechart", "name": "Pie chart", "version": ""},
+    {"type": "panel", "id": "table", "name": "Table", "version": ""}
+  ],
+  "annotations": {"list": []},
+  "description": "AI Agent Security Lab — Attack Detection Overview",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1},
+              {"color": "red", "value": 10}
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"]},"textMode": "auto"},
+      "title": "Attacks Blocked (session)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(increase(agent_tool_calls_total{outcome=\"policy_blocked\"}[1h]))",
+          "legendFormat": "Blocked"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "orange", "value": 1},
+              {"color": "dark-red", "value": 5}
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+      "id": 2,
+      "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "auto"},
+      "title": "Vulnerabilities Found",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(increase(agent_tool_calls_total{outcome=\"error\",error_type=\"security\"}[1h]))",
+          "legendFormat": "Vulnerable"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "unit": "short"}
+      },
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
+      "id": 3,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["sum"]}, "textMode": "auto"},
+      "title": "Total Tool Calls",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(increase(agent_tool_calls_total[1h]))",
+          "legendFormat": "Total"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 60},
+              {"color": "green", "value": 90}
+            ]
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        }
+      },
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
+      "id": 4,
+      "options": {"colorMode": "background", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"]}, "textMode": "auto"},
+      "title": "Block Rate %",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "100 * sum(increase(agent_tool_calls_total{outcome=\"policy_blocked\"}[1h])) / clamp_min(sum(increase(agent_tool_calls_total[1h])), 1)",
+          "legendFormat": "Block Rate"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "unit": "short"},
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "id": 5,
+      "options": {
+        "legend": {"displayMode": "list", "placement": "bottom"},
+        "tooltip": {"mode": "multi"}
+      },
+      "title": "Blocked vs Passed Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(agent_tool_calls_total[5m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "unit": "short"}
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 4},
+      "id": 6,
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right", "values": ["value"]},
+        "pieType": "pie",
+        "tooltip": {"mode": "single"}
+      },
+      "title": "Attacks by OWASP Category",
+      "type": "piechart",
+      "targets": [
+        {
+          "expr": "sum by (owasp_id) (increase(agent_tool_calls_total{outcome=\"policy_blocked\"}[1h]))",
+          "legendFormat": "{{owasp_id}}"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "unit": "short"}
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 4},
+      "id": 7,
+      "options": {
+        "legend": {"displayMode": "table", "placement": "right", "values": ["value"]},
+        "pieType": "donut",
+        "tooltip": {"mode": "single"}
+      },
+      "title": "Attacks by Tool",
+      "type": "piechart",
+      "targets": [
+        {
+          "expr": "sum by (tool) (increase(agent_tool_calls_total{outcome=\"policy_blocked\"}[1h]))",
+          "legendFormat": "{{tool}}"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "unit": "short"}
+      },
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "id": 8,
+      "options": {
+        "legend": {"displayMode": "list", "placement": "bottom"},
+        "tooltip": {"mode": "multi"}
+      },
+      "title": "Attack Rate by Tool (per minute)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (tool, method) (rate(agent_tool_calls_total{outcome=\"policy_blocked\"}[5m]))",
+          "legendFormat": "{{tool}}.{{method}}"
+        }
+      ]
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "${DS_PROMETHEUS}"},
+      "fieldConfig": {
+        "defaults": {"unit": "short"},
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "Value"}, "properties": [{"id": "custom.width", "value": 80}]},
+          {"matcher": {"id": "byName", "options": "owasp_id"}, "properties": [{"id": "custom.width", "value": 80}]}
+        ]
+      },
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 20},
+      "id": 9,
+      "options": {
+        "footer": {"show": false},
+        "showHeader": true,
+        "sortBy": [{"desc": true, "displayName": "Value"}]
+      },
+      "title": "Top Blocked Techniques",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "topk(15, sum by (tool, method, owasp_id) (increase(agent_tool_calls_total{outcome=\"policy_blocked\"}[24h])))",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {"id": "organize", "options": {"renameByName": {"tool": "Tool", "method": "Method", "owasp_id": "OWASP", "Value": "Count"}}}
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "tags": ["security", "ai", "owasp", "mitre"],
+  "templating": {
+    "list": [
+      {
+        "hide": 0,
+        "includeAll": false,
+        "name": "DS_PROMETHEUS",
+        "query": "prometheus",
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "AI Agent Security Lab — Attack Heatmap",
+  "uid": "ai-agent-security-heatmap",
+  "version": 1
+}
