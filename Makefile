@@ -1,4 +1,4 @@
-.PHONY: help up down build logs test test-unit test-security attack-all attack-injection attack-tools attack-memory report clean pull-model
+.PHONY: help up down build logs test test-unit test-security attack-all attack-injection attack-tools attack-memory attack-social report clean pull-model
 
 COMPOSE = docker compose -f infra/docker-compose.yml
 COMPOSE_LLM = $(COMPOSE) --profile llm
@@ -63,6 +63,8 @@ attack-all:  ## Run ALL attack suites
 	python -m attacks.prompt_injection
 	ALLOWED_API_DOMAINS=mock_api python -m attacks.tool_abuse
 	python -m attacks.mem_poison
+	AGENT_MODE=deterministic FILE_SANDBOX_PATH=/tmp/sandbox \
+	python -m attacks.social_engineering
 	@make report
 
 attack-injection:  ## Prompt injection attacks only
@@ -74,6 +76,10 @@ attack-tools:  ## Tool abuse attacks only (path traversal, SSRF, exec escape)
 
 attack-memory:  ## Memory poisoning attacks only (Redis + Chroma)
 	python -m attacks.mem_poison
+
+attack-social:  ## Social engineering attacks (manipulation, multi-agent spoofing, gaslighting)
+	AGENT_MODE=deterministic FILE_SANDBOX_PATH=/tmp/sandbox \
+	python -m attacks.social_engineering
 
 attack-network:  ## SSRF tests with real network (WARNING: sends real requests)
 	@echo "[WARNING] This sends real network requests. Ctrl+C to abort."

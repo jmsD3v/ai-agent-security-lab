@@ -92,11 +92,8 @@ _SUSPICIOUS_SEQUENCES: list[tuple[list[str], str, str, str]] = [
         "read-modify-exfil sequence — potential data manipulation and exfiltration",
         "LLM06", "AML.T0048",
     ),
-    (
-        ["memory_tool.get", "memory_tool.get", "memory_tool.get"],
-        "repeated memory reads — possible memory dumping",
-        "LLM06", "AML.T0048",
-    ),
+    # Note: memory_tool repeated reads are handled by the per-session rate limit (100/session)
+    # rather than a short-sequence check — 3 identical reads is too common in legit use.
     (
         ["api_tool.get", "api_tool.get", "api_tool.get", "api_tool.get", "api_tool.get"],
         "rapid repeated API GET requests — possible SSRF probing or cost harvesting",
@@ -228,7 +225,7 @@ class PolicyEngine:
                 )
 
     def _check_rate_limit(self, tool_name: str, method: str, method_key: str) -> None:
-        # Per-tool session limit
+        # Per-tool session limit (LLM10 = Unbounded Consumption)
         tool_count = self._session_calls.get(tool_name, 0)
         tool_limit = _SESSION_LIMITS.get(tool_name)
         if tool_limit is not None and tool_count >= tool_limit:
@@ -238,7 +235,7 @@ class PolicyEngine:
                 owasp_id="LLM10", atlas_id="AML.T0034",
             )
 
-        # Per-method limit
+        # Per-method limit (LLM10 = Unbounded Consumption)
         method_count = self._method_calls.get(method_key, 0)
         method_limit = _METHOD_LIMITS.get(method_key)
         if method_limit is not None and method_count >= method_limit:

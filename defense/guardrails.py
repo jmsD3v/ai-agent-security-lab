@@ -61,7 +61,7 @@ _INJECTION_PATTERNS: list[tuple[str, str, str]] = [
     (r"\baim\b.*\balways\s+intelligent\s+and\s+machiavellian\b", "LLM01", "AML.T0051"),
     (r"jailbroken?\s*(ai|assistant|model|version)", "LLM01", "AML.T0051"),
     (r"jailbreak", "LLM01", "AML.T0051"),
-    (r"unrestricted\s+(ai|assistant|model|mode|version)", "LLM01", "AML.T0051"),
+    (r"unrestricted\s+(ai|assistant|model|mode|version|capabilities|access|operation|behavior)", "LLM01", "AML.T0051"),
     (r"you\s+are\s+now\s+(a\s+)?(dan|stan|aim|evil|uncensored|jailbroken|unfiltered|unrestricted)", "LLM01", "AML.T0051"),
     # Mode manipulation
     (r"developer\s+mode\s*(enabled|activated|on|:)", "LLM01", "AML.T0051"),
@@ -84,6 +84,13 @@ _INJECTION_PATTERNS: list[tuple[str, str, str]] = [
     (r"\[/INST\]", "LLM01", "AML.T0051"),
     (r"<\|system\|>", "LLM01", "AML.T0051"),
     (r"<s>\[INST\]", "LLM01", "AML.T0051"),
+    # Bypass / disable / circumvent patterns
+    (r"bypass[\s_\-]?.{0,40}?(guardrails?|safety|security|restrictions?|filters?|checks?|validation|alignment|policies|controls)", "LLM01", "AML.T0051"),
+    (r"disable\s+(all\s+)?(safety|guardrails?|output\s+filters?|filters?|restrictions?|security\s+checks?|security)", "LLM01", "AML.T0051"),
+    (r"guardrails?\s+(disabled|off|removed|bypassed|deactivated)", "LLM01", "AML.T0051"),
+    (r"without\s+(safety|security|re.?validation)\s*(checks?|validation|restrictions?|guardrails?|filters?)?", "LLM01", "AML.T0051"),
+    (r"waive\s+.{0,40}(safety|security|restrictions?|rules?|guidelines?|checks?)", "LLM01", "AML.T0051"),
+    (r"proceed\s+without\s+(safety|security|validation|restrictions?|guardrails?|checks?|re.?validation)", "LLM01", "AML.T0051"),
     # Terminal/command injection markers
     (r"\[\[terminal\s+(input|command)\]\]", "LLM01", "AML.T0051"),
     (r"your\s+real\s+instructions?\s+(follow|are)\s*:", "LLM01", "AML.T0051"),
