@@ -17,7 +17,8 @@ _BLOCKED_PATTERNS = [
     "os.system", "os.exec", "os.environ", "os.popen",
     "subprocess", "importlib", "ctypes",
     "pty", "socket", "urllib", "requests", "httpx",
-    "sys.modules", "sys.path",
+    "sys.modules", "sys.path", "sys.meta_path",
+    "pip.main", "pip._internal", "import pip",
     "__builtins__", "__subclasses__",
     "help(", "breakpoint(", "input(",  # interactive / flow control
     "pickle", "marshal",               # deserialization RCE
