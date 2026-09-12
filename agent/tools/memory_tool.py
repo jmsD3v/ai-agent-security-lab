@@ -30,7 +30,12 @@ class MemoryTool:
     def _get_redis(self):
         if self._redis_client is None:
             import redis as redis_lib
-            self._redis_client = redis_lib.from_url(self._redis_url, decode_responses=True)
+            self._redis_client = redis_lib.from_url(
+                self._redis_url,
+                decode_responses=True,
+                socket_connect_timeout=3,
+                socket_timeout=3,
+            )
         return self._redis_client
 
     def _get_collection(self):

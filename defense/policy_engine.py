@@ -57,7 +57,13 @@ _CHAIN_DENY: dict[str, set[str]] = {
     "file_tool":   {"api_tool"},      # read file → exfil via HTTP
     "memory_tool": {"api_tool"},      # read memory → exfil via HTTP
     "exec_tool":   {"api_tool"},      # execute code → exfil results
-    "exec_tool":   {"file_tool"},     # execute code → write to fs (disabled by default — too strict for normal use)
+    # exec_tool -> file_tool intentionally NOT denied: writing a file after running code
+    # is normal agent behavior (e.g. saving a computed result), too strict to block outright.
+    # NOTE: this used to be a second "exec_tool" key in this same dict literal, which
+    # silently overwrote the api_tool entry above — Python dict literals don't merge,
+    # they replace. The exec->api rule (the actually dangerous exfiltration chain) was
+    # dead the whole time; only the "too strict" file rule was ever enforced. Found by
+    # actually testing PolicyEngine.check() end-to-end instead of trusting the table.
 }
 
 # Per-session rate limits: max calls per tool per session.
