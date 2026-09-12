@@ -12,6 +12,7 @@ Defense layers applied on every request:
 """
 
 import os
+from dotenv import load_dotenv
 from agent.tools import FileTool, APITool, MemoryTool, ExecTool
 from monitor.intercept_layer import InterceptLayer
 from monitor.audit_log import AuditLog
@@ -19,6 +20,8 @@ from defense.guardrails import Guardrails, GuardrailViolation
 from defense.policy_engine import PolicyEngine
 from defense.content_security import ContentSecurity, ContentSecurityViolation
 from defense.semantic_classifier import SemanticClassifier
+
+load_dotenv()  # loads .env if present — a no-op if env vars are already set (Docker, CI, shell export)
 
 
 SYSTEM_PROMPT = """You are a Security Research Assistant with access to tools for
@@ -74,9 +77,12 @@ class Agent:
                 base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
             )
         elif provider == "anthropic":
-            from langchain_community.chat_models import ChatAnthropic
+            from langchain_anthropic import ChatAnthropic
             return ChatAnthropic(model=os.getenv("LLM_MODEL", "claude-haiku-4-5-20251001"))
-        raise ValueError(f"unknown LLM_PROVIDER: {provider}")
+        elif provider == "openai":
+            from langchain_openai import ChatOpenAI
+            return ChatOpenAI(model=os.getenv("LLM_MODEL", "gpt-4o-mini"))
+        raise ValueError(f"unknown LLM_PROVIDER: {provider!r} (expected local | anthropic | openai)")
 
     def run(self, user_input: str) -> str:
         # Layer 1: semantic classifier — heuristic intent scoring
@@ -167,7 +173,10 @@ class Agent:
 
 
 if __name__ == "__main__":
+    import sys
+    if sys.stdout.encoding.lower() != "utf-8":
+        sys.stdout.reconfigure(encoding="utf-8")  # Windows console defaults to cp1252
     agent = Agent()
-    print("=== AI Agent Security Lab — Security Research Assistant ===")
+    print("=== AI Agent Security Lab - Security Research Assistant ===")
     print(f"Mode: {os.getenv('AGENT_MODE', 'deterministic')}")
     print(agent.run("list files"))

@@ -14,6 +14,7 @@ class FileTool:
     def __init__(self, sandbox_root: str | None = None):
         root = sandbox_root or os.getenv("FILE_SANDBOX_PATH", "/sandbox/data")
         self._root = Path(root).resolve()
+        self._root.mkdir(parents=True, exist_ok=True)
 
     def _safe_path(self, relative: str) -> Path:
         # Decode URL encoding before resolving — blocks %2e%2e%2f variants

@@ -352,4 +352,7 @@ def run_supply_chain_tests(exec_fn=None) -> dict:
 
 
 if __name__ == "__main__":
+    import sys
+    if sys.stdout.encoding.lower() != "utf-8":
+        sys.stdout.reconfigure(encoding="utf-8")  # Windows console defaults to cp1252 — breaks on ✓/✗/→
     run_supply_chain_tests()

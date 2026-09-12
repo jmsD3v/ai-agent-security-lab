@@ -1,0 +1,29 @@
+<svg width="1200" height="260" viewBox="0 0 1200 260" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glow" cx="80%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#f5b942" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#f5b942" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f5b942" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#f5b942" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="260" fill="#0d1117"/>
+  <rect width="1200" height="260" fill="url(#glow)"/>
+  <rect x="0" y="0" width="6" height="260" fill="url(#edge)"/>
+  <rect x="0" y="257" width="1200" height="3" fill="#f5b942" fill-opacity="0.5"/>
+
+  <line x1="1065" y1="78" x2="1023" y2="63" stroke="#f5b942" stroke-opacity="0.25" stroke-width="1"/><line x1="1065" y1="78" x2="1114" y2="57" stroke="#f5b942" stroke-opacity="0.25" stroke-width="1"/><line x1="1102" y1="206" x2="1114" y2="57" stroke="#f5b942" stroke-opacity="0.25" stroke-width="1"/><line x1="924" y1="58" x2="948" y2="133" stroke="#f5b942" stroke-opacity="0.25" stroke-width="1"/><line x1="924" y1="58" x2="1009" y2="49" stroke="#f5b942" stroke-opacity="0.25" stroke-width="1"/><line x1="948" y1="133" x2="944" y2="151" stroke="#f5b942" stroke-opacity="0.25" stroke-width="1"/><line x1="948" y1="133" x2="929" y2="169" stroke="#f5b942" stroke-opacity="0.25" stroke-width="1"/><line x1="929" y1="169" x2="944" y2="151" stroke="#f5b942" stroke-opacity="0.25" stroke-width="1"/><line x1="1009" y1="49" x2="1023" y2="63" stroke="#f5b942" stroke-opacity="0.25" stroke-width="1"/><line x1="1114" y1="57" x2="1023" y2="63" stroke="#f5b942" stroke-opacity="0.25" stroke-width="1"/>
+  <circle cx="1065" cy="78" r="4" fill="#f5b942" fill-opacity="0.45"/><circle cx="1102" cy="206" r="4" fill="#f5b942" fill-opacity="0.45"/><circle cx="924" cy="58" r="4" fill="#f5b942" fill-opacity="0.45"/><circle cx="948" cy="133" r="4" fill="#f5b942" fill-opacity="0.45"/><circle cx="929" cy="169" r="7" fill="#f5b942" fill-opacity="0.75"/><circle cx="1009" cy="49" r="4" fill="#f5b942" fill-opacity="0.45"/><circle cx="944" cy="151" r="4" fill="#f5b942" fill-opacity="0.45"/><circle cx="1114" cy="57" r="4" fill="#f5b942" fill-opacity="0.45"/><circle cx="1023" cy="63" r="4" fill="#f5b942" fill-opacity="0.45"/>
+
+  <rect x="56" y="52" width="150" height="28" rx="5" fill="#f5b942" fill-opacity="0.15" stroke="#f5b942" stroke-opacity="0.7"/>
+  <text x="131" y="70" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="700" fill="#f5b942" text-anchor="middle" dominant-baseline="middle">RESEARCH LAB</text>
+
+  <text x="56" y="140" font-family="JetBrains Mono, Consolas, monospace" font-size="44" font-weight="700" fill="#e6edf3">ai-agent-security-lab</text>
+  <text x="56" y="174" font-family="JetBrains Mono, Consolas, monospace" font-size="17" fill="#8b949e">Red/blue team lab for autonomous AI agent security</text>
+  <text x="56" y="204" font-family="JetBrains Mono, Consolas, monospace" font-size="12.5" fill="#8b949e" fill-opacity="0.75">500+ payloads · 397 tests passing · OWASP LLM Top 10 + MITRE ATLAS</text>
+
+  <text x="1174" y="244" font-family="JetBrains Mono, Consolas, monospace" font-size="12" font-weight="700" fill="#f5b942" text-anchor="end" letter-spacing="2">RED / BLUE</text>
+</svg>
