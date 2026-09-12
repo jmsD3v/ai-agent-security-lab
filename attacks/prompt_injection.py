@@ -1,5 +1,5 @@
 """
-Prompt Injection Attack Suite — Comprehensive 2024/2025 Coverage
+Prompt Injection Attack Suite
 OWASP LLM01 | MITRE ATLAS AML.T0051
 
 Technique families:

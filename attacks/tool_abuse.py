@@ -1,5 +1,5 @@
 """
-Tool Abuse Attack Suite — Comprehensive 2024/2025 Coverage
+Tool Abuse Attack Suite
 OWASP LLM06 (Excessive Agency), LLM05 (Improper Output Handling)
 MITRE ATLAS AML.T0043 (Craft Adversarial Data), AML.T0034 (Cost Harvesting)
 

@@ -202,12 +202,30 @@ def _deterministic_supervisor(state: AgentState) -> AgentState:
     return {**state, "current_agent": next_agent}
 
 
+def _init_llm():
+    """Provider-agnostic LLM factory — mirrors agent.Agent._init_llm() so the
+    LangGraph supervisor honors LLM_PROVIDER instead of always trying Ollama
+    regardless of what the user configured."""
+    provider = os.getenv("LLM_PROVIDER", "local")
+    if provider == "local":
+        from langchain_ollama import ChatOllama
+        return ChatOllama(
+            model=os.getenv("LLM_MODEL", os.getenv("OLLAMA_MODEL", "llama3")),
+            base_url=os.getenv("OLLAMA_BASE_URL", os.getenv("OLLAMA_HOST", "http://localhost:11434")),
+        )
+    elif provider == "anthropic":
+        from langchain_anthropic import ChatAnthropic
+        return ChatAnthropic(model=os.getenv("LLM_MODEL", "claude-haiku-4-5-20251001"))
+    elif provider == "openai":
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(model=os.getenv("LLM_MODEL", "gpt-4o-mini"))
+    raise ValueError(f"unknown LLM_PROVIDER: {provider!r} (expected local | anthropic | openai)")
+
+
 def _llm_supervisor(state: AgentState) -> AgentState:
-    """LLM-backed supervisor using configured model (Ollama or Anthropic)."""
+    """LLM-backed supervisor using the configured provider (local/anthropic/openai)."""
     try:
-        from langchain_community.llms import Ollama
-        llm = Ollama(model=os.getenv("OLLAMA_MODEL", "llama3"),
-                     base_url=os.getenv("OLLAMA_HOST", "http://localhost:11434"))
+        llm = _init_llm()
     except Exception:
         return _deterministic_supervisor(state)
 

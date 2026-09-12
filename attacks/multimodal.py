@@ -1,5 +1,5 @@
 """
-Multimodal Attack Suite — 2024/2025
+Multimodal Attack Suite
 OWASP LLM01 (Prompt Injection), LLM02 (Insecure Output), LLM08 (Excessive Agency via Vision)
 MITRE ATLAS AML.T0051 (Prompt Injection), AML.T0040 (Supply Chain via model inputs)
 

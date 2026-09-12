@@ -1,5 +1,5 @@
 """
-Social Engineering & Advanced Manipulation Attack Suite — 2024/2025
+Social Engineering & Advanced Manipulation Attack Suite
 OWASP LLM01 (Prompt Injection), LLM06 (Excessive Agency)
 MITRE ATLAS AML.T0051, AML.T0043
 
