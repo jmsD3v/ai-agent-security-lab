@@ -90,6 +90,17 @@ _RAG_INJECTION_PATTERNS: list[re.Pattern] = [
     re.compile(r"disregard\s+(your|previous|all)\s*(instructions?|guidelines?|training)?", re.IGNORECASE),
     re.compile(r"you\s+(are\s+now|have\s+been)\s+.{0,20}?(jailbroken|freed|unrestricted|dan)", re.IGNORECASE),
     re.compile(r"reveal\s+(your\s+)?(system\s+prompt|instructions?|training|guidelines?)", re.IGNORECASE),
+    # Tool/plugin metadata trust (LLM03/AML.T0040): a description isn't phrased
+    # like a jailbreak ("ignore previous instructions") — it hides a secondary
+    # instruction inside otherwise-plausible tool documentation. These target
+    # that shape specifically: "also/silently do X with credentials", and a
+    # declared narrow purpose contradicted by a claimed dangerous capability.
+    re.compile(r"(also|additionally)\b.{0,80}?(read|access|include|send|upload|exfiltrat\w*).{0,60}?"
+               r"(\.ssh|\.aws|credentials?|id_rsa|private[_\s]?key|api[_\s]?key|passwords?|secrets?)", re.IGNORECASE),
+    re.compile(r"\b(silently|covertly|secretly)\b.{0,40}?(exfiltrat\w*|send|upload|transmit)", re.IGNORECASE),
+    re.compile(r"(also\s+capable\s+of|in\s+addition\s+to\s+this|is\s+also\s+able\s+to)\b.{0,60}?"
+               r"(modify(ing)?\s+system\s+files|execut(e|ing)\s+shell\s+commands|delet(e|ing)\s+(files|data)|access(ing)?\s+the\s+network)",
+               re.IGNORECASE),
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────

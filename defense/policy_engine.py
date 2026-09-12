@@ -10,6 +10,7 @@ Policies enforced:
   4.  Suspicious method sequence detection (privilege escalation patterns)
   5.  Argument-level policy checks (path, URL, code content)
   6.  Concurrent tool guard (exec_tool cannot run while another call is active)
+  7.  Tool-name typosquat detection (MCP/plugin registries — LLM03, AML.T0040)
 
 All violations map to OWASP LLM Top 10 + MITRE ATLAS identifiers.
 """
@@ -168,6 +169,27 @@ _EXEC_DANGER_PATTERNS = [
 ]
 
 
+# Trusted tool names an MCP/plugin registry entry is compared against.
+# Matches the LangChain Tool(name=...) values wired up in agent.agent._llm_run.
+_KNOWN_TOOL_NAMES: set[str] = {"file_read", "file_list", "memory_search", "api_get"}
+
+
+def _levenshtein(a: str, b: str) -> int:
+    """Classic O(len(a)*len(b)) edit distance — no external dependency needed
+    for names this short. Case-sensitive on purpose: "File_Read" vs "file_read"
+    is itself a legitimate thing to flag, not something to normalize away."""
+    if a == b:
+        return 0
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, start=1):
+        curr = [i] + [0] * len(b)
+        for j, cb in enumerate(b, start=1):
+            cost = 0 if ca == cb else 1
+            curr[j] = min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost)
+        prev = curr
+    return prev[-1]
+
+
 class PolicyEngine:
     """
     Enforces tool-level access control.
@@ -211,6 +233,43 @@ class PolicyEngine:
         self._method_calls.clear()
         self._session_tools_used.clear()
         self._method_sequence.clear()
+
+    def check_tool_registration(self, tool_name: str, known_tools: set[str] | None = None) -> None:
+        """
+        MCP/plugin registry trust check (LLM03, AML.T0040).
+
+        A tool name that is NOT an exact match for anything in `known_tools` but
+        is suspiciously close to one (edit distance 1-2) is a typosquat/lookalike
+        attempt — e.g. a malicious MCP server registering "flie_read" or
+        "get_wheather" hoping an agent (or a human skimming a tool list) treats
+        it as the trusted "file_read" / "get_weather". Exact matches always pass;
+        names with no close relative in the registry pass too (this isn't an
+        allowlist — it only catches the specific "looks like X but isn't" case).
+        """
+        known_tools = known_tools if known_tools is not None else _KNOWN_TOOL_NAMES
+        if tool_name in known_tools:
+            return
+        for known in known_tools:
+            distance = _levenshtein(tool_name, known)
+            if 0 < distance <= 2 and abs(len(tool_name) - len(known)) <= 2:
+                raise PolicyViolation(
+                    tool_name, "register",
+                    f"tool name {tool_name!r} is suspiciously similar to trusted tool "
+                    f"{known!r} (edit distance {distance}) — possible typosquat",
+                    owasp_id="LLM03", atlas_id="AML.T0040",
+                )
+
+    def check_tool_code(self, code: str, tool_name: str = "plugin_tool") -> None:
+        """
+        MCP/plugin implementation trust check (LLM03, AML.T0040).
+
+        A malicious plugin/MCP tool can ship an innocent-looking name and
+        description while its actual implementation shells out or exfiltrates
+        data — the name/description checks above never see that code. Reuses
+        the same dangerous-code-pattern check already enforced on exec_tool
+        arguments (_assert_safe_code) rather than maintaining a second list.
+        """
+        self._assert_safe_code(tool_name, "register", code)
 
     # ── Internal policy checks ───────────────────────────────────────────────
 

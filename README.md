@@ -16,7 +16,7 @@
 
 ---
 
-**400+ attack payloads (402, counted live) · 13 injection families · 6 attack modules**  
+**400+ attack payloads (408, counted live) · 13 injection families · 6 attack modules**  
 **5-layer defense stack · Full OWASP LLM Top 10 (2025) + MITRE ATLAS coverage**  
 **Runs without Docker · CI/CD ready · SARIF export · LangGraph + AutoGen support**
 
@@ -26,7 +26,7 @@
 
 ## Why This Exists
 
-AI agents with tool access are a **relatively new attack surface**: they can read files, call APIs, run code, and query vector databases — all under LLM control. Traditional AppSec doesn't cover them, and the threat landscape keeps moving (this lab currently covers prompt injection, tool abuse, memory poisoning, social engineering, supply chain, and multimodal attacks — MCP/tool-trust attacks are next, see [Roadmap](#roadmap)).
+AI agents with tool access are a **relatively new attack surface**: they can read files, call APIs, run code, and query vector databases — all under LLM control. Traditional AppSec doesn't cover them, and the threat landscape keeps moving (this lab covers prompt injection, tool abuse, memory poisoning, social engineering, supply chain — including MCP/tool-trust attacks, the newest OWASP LLM03 vector — and multimodal attacks; see [Roadmap](#roadmap) for what's next).
 
 Deploy a real autonomous agent. Fire 400+ payloads against it. Watch the defense layer hold (or find where it doesn't). Contribute your bypasses back.
 
@@ -63,6 +63,7 @@ Deploy a real autonomous agent. Fire 400+ payloads against it. Watch the defense
 | Argument Injection (shell meta, Log4Shell) | 16 | LLM06 | AML.T0043 | ✅ Blocked |
 | File Write Abuse (crontab, sudoers, SSH) | 20 | LLM06 | AML.T0043 | ✅ Blocked |
 | Supply Chain (typosquatting, dep confusion) | 25 | LLM03 | AML.T0040 | ✅ Blocked |
+| MCP / Tool-Trust Poisoning (rug pull, typosquat, scope creep) | 5 | LLM03 | AML.T0040 | ⚠️ Partial |
 | Multimodal (vision, EXIF, PDF, audio, QR) | 27 | LLM01/02 | AML.T0051 | ✅ Detected† |
 
 > † RAG poison payloads are **stored** to verify what the agent retrieves — the defense is in the guardrail that validates LLM output, not in blocking storage. This is intentional to test end-to-end behavior.
@@ -79,6 +80,7 @@ Deploy a real autonomous agent. Fire 400+ payloads against it. Watch the defense
 | ROT13 / reversed text | Requires reversals + substitution pre-processing | Normalization pipeline |
 | Semantic injection (plausible text) | **Partially mitigated** — SemanticClassifier catches score ≥ 0.70 | Tune classifier threshold; use LLM-backed tier |
 | Ultrasonic/inaudible audio injection | Not transcribed in test environment; ASR-dependent | Validate full ASR transcript through guardrails |
+| Fake MCP publisher/verification claims | No pattern can verify a "this is officially verified" claim against reality | Trust root — signed tool manifests, real publisher identity |
 
 **These gaps are intentional transparency.** Real-world guardrails have them too. The lab shows what holds and what doesn't.
 
@@ -282,11 +284,11 @@ ai-agent-security-lab/
 │       └── exec_tool.py            Restricted subprocess (static analysis + resource limits)
 │
 ├── attacks/                        Offensive framework
-│   ├── prompt_injection.py         90+ payloads, 13 families (LLM01 / AML.T0051)
-│   ├── tool_abuse.py               150+ payloads, 7 categories (LLM05/06/10)
-│   ├── mem_poison.py               46+ payloads — Redis + RAG vector (LLM04/08)
-│   ├── social_engineering.py       46 payloads, 8 families (LLM01/06 / AML.T0051/T0054)
-│   ├── supply_chain.py             25 payloads, 7 categories (LLM03 / AML.T0040)
+│   ├── prompt_injection.py         96 payloads, 13 families (LLM01 / AML.T0051)
+│   ├── tool_abuse.py               170 payloads, 7 categories (LLM05/06/10)
+│   ├── mem_poison.py               46 payloads — Redis + RAG vector (LLM04/08)
+│   ├── social_engineering.py       39 payloads, 8 families (LLM01/06 / AML.T0051/T0054)
+│   ├── supply_chain.py             30 payloads, 8 categories incl. MCP tool trust (LLM03 / AML.T0040)
 │   └── multimodal.py               27 payloads, 8 categories (LLM01/02 / AML.T0051)
 │
 ├── defense/                        5-layer defensive stack
@@ -526,6 +528,7 @@ Found a bypass? Please share it.
 ## Roadmap
 
 - [x] `attacks/supply_chain.py` — typosquatting, dep confusion, plugin poisoning, model tampering
+- [x] `attacks/supply_chain.py` — MCP/tool-trust attacks (rug pulls, typosquatted tool names, scope-creep descriptions, secondary-tool exfiltration) — `check_tool_registration()` in `policy_engine.py` for names, `sanitize_rag_document()` in `content_security.py` for descriptions, one honest gap left (publisher-verification claims, no pattern can check those against reality)
 - [x] `attacks/multimodal.py` — vision injection, EXIF, PDF, alt-text, audio, QR codes
 - [x] `defense/content_security.py` — RAG sanitization, PII redaction, URL allowlist
 - [x] `defense/semantic_classifier.py` — heuristic + optional LLM intent classifier
@@ -534,9 +537,10 @@ Found a bypass? Please share it.
 - [x] Grafana dashboards — attack heatmap + guardrail coverage (auto-provisioned)
 - [x] SARIF 2.1.0 export — `make report-sarif` → GitHub Code Scanning
 
-**Next:**
+**Next** — the threat landscape keeps moving, this is what's explicitly next, not just implied:
 - [ ] Agent-to-agent attacks — MAS (multi-agent system) orchestrator compromise vectors
-- [ ] Hex/base64 decoder pre-processing — close the encoding bypass gap
+- [ ] Hex/base64/ROT13 decoder pre-processing — close the encoding bypass gaps with a decode-then-recheck pass instead of leaving them as permanent documented gaps
+- [ ] Cross-language pattern coverage — the 5 languages already tested (FR/ES/DE/JA/AR) currently score 0/5 blocked; add equivalent signal phrases to `guardrails.py` and `semantic_classifier.py`
 - [ ] Fine-tuned intent classifier — trained on this lab's payload corpus
 
 ---
@@ -556,19 +560,12 @@ Found a bypass? Please share it.
 
 ---
 
-## Roadmap
-
-The threat landscape keeps moving — here's what's explicitly next, not just implied:
-
-- **MCP / tool-trust attacks.** Model Context Protocol became the standard way agents reach external tools in 2025, and it opened a new trust boundary: a tool's description can change after you've already trusted it ("rug pull"), a malicious server can typosquat a well-known tool name, or a description can carry hidden instructions the way a poisoned RAG document does. Planned: extend `content_security.sanitize_rag_document()` to also validate tool metadata (the mechanism already generalizes — an injected instruction in a tool description is structurally the same problem as one in a retrieved document), plus a name-similarity check in `policy_engine.py` against a known-tools registry.
-- **Encoder pre-processing for guardrails** — close the hex/base64/ROT13 gaps in the table above with a decode-then-recheck pass, instead of leaving them as permanent documented gaps.
-- **Cross-language pattern coverage** — the 5 languages already tested (FR/ES/DE/JA/AR) currently score 0/5 blocked; add the equivalent signal phrases to `guardrails.py` and `semantic_classifier.py`.
-
 ## Changelog highlights
 
 - **Found and fixed a live policy gap, not just a demo bug**: `_CHAIN_DENY` had two `"exec_tool"` keys in the same dict literal — Python silently keeps only the last one, so the entry meant to block `exec_tool → api_tool` (run code, then exfiltrate the result over HTTP — the actual dangerous chain the rationale comment describes) was dead. Only the intentionally-lenient `exec_tool → file_tool` rule survived. Never caught because `policy_engine.py` — a core defense component — had zero dedicated unit tests. Fixed both: the table, and the missing `tests/unit/test_policy_engine.py` (19 tests) that would have caught it.
 - Fixed `mem_poison.py` retrying a dead Redis/Chroma connection once per payload instead of once total — turned a multi-minute apparent hang into a 14-second run with an honest `[SKIPPED]` instead of misreporting infra failures as successful blocks.
 - Added the missing OpenAI branch in `agent._init_llm()` (documented in `.env.example` since the start, never implemented).
+- Added MCP/tool-trust attacks (`attacks/supply_chain.py`): rug-pull descriptions, typosquatted tool names, scope-creep descriptions, and secondary-tool exfiltration instructions — validated for real through `content_security.py` and `policy_engine.py`, not just printed as reference payloads. Strengthening the checks surfaced 4 real bypasses in the existing RAG-injection patterns (they only matched classic "ignore previous instructions" phrasing, not "also read ~/.ssh" or "also capable of executing shell commands"); added targeted patterns to close them, plus a `check_tool_code()` check for malicious code hiding behind a clean tool name/description.
 
 ## License
 
