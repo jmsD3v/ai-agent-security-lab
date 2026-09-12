@@ -12,11 +12,11 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://python.org)
 [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-jmsilva83-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/jmsilva83/ai-agent-security-lab)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-397%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-416%20passing-brightgreen)](#testing)
 
 ---
 
-**500+ attack payloads · 13 injection families · 8 attack modules**  
+**400+ attack payloads (402, counted live) · 13 injection families · 6 attack modules**  
 **5-layer defense stack · Full OWASP LLM Top 10 (2025) + MITRE ATLAS coverage**  
 **Runs without Docker · CI/CD ready · SARIF export · LangGraph + AutoGen support**
 
@@ -26,9 +26,9 @@
 
 ## Why This Exists
 
-AI agents with tool access are the **new attack surface** for 2024-2025. They can read files, call APIs, run code, and query vector databases — all under LLM control. Traditional AppSec doesn't cover them. This lab does.
+AI agents with tool access are a **relatively new attack surface**: they can read files, call APIs, run code, and query vector databases — all under LLM control. Traditional AppSec doesn't cover them, and the threat landscape keeps moving (this lab currently covers prompt injection, tool abuse, memory poisoning, social engineering, supply chain, and multimodal attacks — MCP/tool-trust attacks are next, see [Roadmap](#roadmap)).
 
-Deploy a real autonomous agent. Fire 290+ payloads against it. Watch the defense layer hold (or find where it doesn't). Contribute your bypasses back.
+Deploy a real autonomous agent. Fire 400+ payloads against it. Watch the defense layer hold (or find where it doesn't). Contribute your bypasses back.
 
 **Built for:**
 - 🔴 **Red teamers** — structured attack framework with OWASP/ATLAS mapping
@@ -88,10 +88,10 @@ Deploy a real autonomous agent. Fire 290+ payloads against it. Watch the defense
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         ATTACK FRAMEWORK (500+ payloads)                │
+│                         ATTACK FRAMEWORK (400+ payloads)                │
 │  prompt_injection · tool_abuse · mem_poison · social_engineering        │
 │  supply_chain · multimodal                                              │
-│         8 modules · 13 injection families · OWASP LLM01–LLM10          │
+│         6 modules · 13 injection families · OWASP LLM01–LLM10          │
 └────────────────────────────┬────────────────────────────────────────────┘
                              │
                              ▼
@@ -183,7 +183,7 @@ git clone https://github.com/jmsD3v/ai-agent-security-lab
 cd ai-agent-security-lab
 pip install -e ".[dev]"
 
-make test-security   # run all 397 security tests (no LLM needed)
+make test-security   # run all 416 security tests (no LLM needed)
 make attack-all      # fire full attack suite
 make report-html     # open reports/report.html
 ```
@@ -466,7 +466,7 @@ intercept = InterceptLayer([..., YourTool()])
 ## Testing
 
 ```bash
-# All tests (397 passing)
+# All tests (416 passing)
 make test
 
 # Unit tests only (no Docker, fast)
@@ -486,7 +486,7 @@ open htmlcov/index.html
 | `tests/unit/` | ~95 | FileTool, APITool, Guardrails, ContentSecurity, SemanticClassifier |
 | `tests/security/` | ~267 | All attack payloads: injection, tool abuse, supply chain, multimodal, social eng |
 | `tests/integration/` | ~35 | Full E2E: agent → tools → mock_api → audit log |
-| **Total** | **397** | **Full stack** |
+| **Total** | **416** | **Full stack** |
 
 ---
 
@@ -555,6 +555,20 @@ Found a bypass? Please share it.
 | [LangChain Security Docs](https://python.langchain.com/docs/security) | Framework security guidance |
 
 ---
+
+## Roadmap
+
+The threat landscape keeps moving — here's what's explicitly next, not just implied:
+
+- **MCP / tool-trust attacks.** Model Context Protocol became the standard way agents reach external tools in 2025, and it opened a new trust boundary: a tool's description can change after you've already trusted it ("rug pull"), a malicious server can typosquat a well-known tool name, or a description can carry hidden instructions the way a poisoned RAG document does. Planned: extend `content_security.sanitize_rag_document()` to also validate tool metadata (the mechanism already generalizes — an injected instruction in a tool description is structurally the same problem as one in a retrieved document), plus a name-similarity check in `policy_engine.py` against a known-tools registry.
+- **Encoder pre-processing for guardrails** — close the hex/base64/ROT13 gaps in the table above with a decode-then-recheck pass, instead of leaving them as permanent documented gaps.
+- **Cross-language pattern coverage** — the 5 languages already tested (FR/ES/DE/JA/AR) currently score 0/5 blocked; add the equivalent signal phrases to `guardrails.py` and `semantic_classifier.py`.
+
+## Changelog highlights
+
+- **Found and fixed a live policy gap, not just a demo bug**: `_CHAIN_DENY` had two `"exec_tool"` keys in the same dict literal — Python silently keeps only the last one, so the entry meant to block `exec_tool → api_tool` (run code, then exfiltrate the result over HTTP — the actual dangerous chain the rationale comment describes) was dead. Only the intentionally-lenient `exec_tool → file_tool` rule survived. Never caught because `policy_engine.py` — a core defense component — had zero dedicated unit tests. Fixed both: the table, and the missing `tests/unit/test_policy_engine.py` (19 tests) that would have caught it.
+- Fixed `mem_poison.py` retrying a dead Redis/Chroma connection once per payload instead of once total — turned a multi-minute apparent hang into a 14-second run with an honest `[SKIPPED]` instead of misreporting infra failures as successful blocks.
+- Added the missing OpenAI branch in `agent._init_llm()` (documented in `.env.example` since the start, never implemented).
 
 ## License
 
