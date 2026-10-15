@@ -12,3 +12,21 @@ dist/
 build/
 .venv/
 venv/
+
+# --- Base de seguridad e higiene (2026-10) ---
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.template
+.vercel
+*.log
+logs/
+*.pem
+*.key
+*.p12
+*.pfx
+.DS_Store
+Thumbs.db
+.mypy_cache/
+.ruff_cache/
