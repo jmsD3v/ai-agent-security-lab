@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 LABEL org.opencontainers.image.title="AI Agent Security Lab — Mock API" \
       org.opencontainers.image.description="Mock vulnerability database API with honeypot endpoints for agent security testing. Part of the AI Agent Security Testing Lab." \
@@ -8,6 +8,9 @@ LABEL org.opencontainers.image.title="AI Agent Security Lab — Mock API" \
       org.opencontainers.image.version="1.0.0" \
       org.opencontainers.image.vendor="AI Agent Security Lab"
 
+
+# Parches de seguridad del sistema base (Debian) que todavía no estén en la imagen oficial
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 RUN addgroup --gid 1002 mockapi && \
     adduser --uid 1002 --gid 1002 --disabled-password --gecos "" mockapi
 

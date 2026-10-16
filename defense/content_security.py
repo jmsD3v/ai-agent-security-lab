@@ -53,8 +53,10 @@ _PII_PATTERNS: list[tuple[str, re.Pattern, str]] = [
 # Dangerous HTML/Markdown content
 # ─────────────────────────────────────────────────────────────────────────────
 _DANGEROUS_HTML_PATTERNS: list[re.Pattern] = [
-    re.compile(r"<script\b[^>]*>.*?</script>", re.DOTALL | re.IGNORECASE),
-    re.compile(r"<iframe\b[^>]*>.*?</iframe>", re.DOTALL | re.IGNORECASE),
+    # El cierre acepta espacios/atributos ("</script >") y, si no hay cierre,
+    # se lleva hasta el final del texto: un <script> sin cerrar igual es peligroso.
+    re.compile(r"<script\b[^>]*>.*?(?:</script\b[^>]*>|$)", re.DOTALL | re.IGNORECASE),
+    re.compile(r"<iframe\b[^>]*>.*?(?:</iframe\b[^>]*>|$)", re.DOTALL | re.IGNORECASE),
     re.compile(r"on\w+\s*=\s*[\"'][^\"']*[\"']", re.IGNORECASE),  # onclick=, onload=, etc.
     re.compile(r"javascript\s*:", re.IGNORECASE),
     re.compile(r"vbscript\s*:", re.IGNORECASE),

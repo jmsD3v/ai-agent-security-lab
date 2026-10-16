@@ -1,4 +1,4 @@
-FROM python:3.11-slim AS base
+FROM python:3.14-slim AS base
 
 LABEL org.opencontainers.image.title="AI Agent Security Lab — Agent" \
       org.opencontainers.image.description="Autonomous security research agent with sandboxed tools, guardrails, and audit logging. Part of the AI Agent Security Testing Lab." \
@@ -11,6 +11,9 @@ LABEL org.opencontainers.image.title="AI Agent Security Lab — Agent" \
       security.mitre.atlas="AML.T0051,AML.T0048,AML.T0043,AML.T0034"
 
 # Non-root user — mínimo privilegio
+
+# Parches de seguridad del sistema base (Debian) que todavía no estén en la imagen oficial
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 RUN addgroup --gid 1001 agent && \
     adduser --uid 1001 --gid 1001 --disabled-password --gecos "" agent
 
