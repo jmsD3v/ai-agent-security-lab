@@ -21,7 +21,8 @@ WORKDIR /app
 
 # Dependencias primero (cache layer)
 COPY pyproject.toml .
-RUN pip install --no-cache-dir -e ".[dev]"
+RUN pip install --no-cache-dir --upgrade pip setuptools && \
+    pip install --no-cache-dir -e ".[dev]" "urllib3>=2.8" "msgpack>=1.2"
 
 # Código fuente
 COPY agent/ ./agent/

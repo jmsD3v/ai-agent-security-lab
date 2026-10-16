@@ -16,7 +16,8 @@ RUN addgroup --gid 1002 mockapi && \
 
 WORKDIR /app
 COPY pyproject.toml .
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir --upgrade pip setuptools && \
+    pip install --no-cache-dir -e . "urllib3>=2.8"
 COPY mock_api/ ./mock_api/
 
 USER mockapi
