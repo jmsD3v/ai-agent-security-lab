@@ -20,6 +20,10 @@ RUN pip install --no-cache-dir --upgrade pip setuptools && \
     pip install --no-cache-dir -e . "urllib3>=2.8"
 COPY mock_api/ ./mock_api/
 
+# pip no se usa en ejecución y trae copias propias (vendor) de urllib3, msgpack
+# y setuptools que Trivy marca como vulnerables: se quita de la imagen final.
+RUN python -m pip uninstall -y pip
+
 USER mockapi
 
 HEALTHCHECK --interval=5s --timeout=3s --retries=5 \

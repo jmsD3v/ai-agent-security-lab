@@ -39,6 +39,10 @@ RUN mkdir -p /sandbox/data /sandbox/vuln-db && \
 # Reports dir
 RUN mkdir -p /app/reports && chown agent:agent /app/reports
 
+# pip no se usa en ejecución y trae copias propias (vendor) de urllib3, msgpack
+# y setuptools que Trivy marca como vulnerables: se quita de la imagen final.
+RUN python -m pip uninstall -y pip
+
 USER agent
 
 HEALTHCHECK --interval=10s --timeout=3s --retries=3 \
